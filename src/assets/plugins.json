@@ -101,12 +101,12 @@
       "cmd": "wget -q -O /tmp/diskman.apk '{URL}' && wget -q -O /tmp/diskman_i18n.apk 'https://github.com/sbwml/luci-app-diskman/releases/download/v1.0.0-r4/luci-i18n-diskman-zh-cn-26.123.16888.215a3d3.apk' && apk add --allow-untrusted /tmp/diskman.apk /tmp/diskman_i18n.apk && rm -f /tmp/diskman*.apk"
     },
     {
-      "name": "arcane-cli",
-      "desc": "Arcane 命令行工具(按路由器架构自动匹配)",
+      "name": "arcane",
+      "desc": "Arcane Docker 管理面板(自动安装 dockerd 并部署容器,Web 端口 3552,镜像来自 Docker Hub)",
       "category": "系统",
       "type": "external",
-      "url": "https://github.com/getarcaneapp/arcane/releases/download/v2.17.0/arcane-cli_2.17.0_x86_64.apk",
-      "cmd": "A=$(apk --print-arch); case \"$A\" in x86_64) F=x86_64;; aarch64*) F=aarch64;; armv7*) F=armv7;; *) echo \"不支持的架构 $A\"; exit 1;; esac && wget -q -O /tmp/arcane.apk 'https://github.com/getarcaneapp/arcane/releases/download/v2.17.0/arcane-cli_2.17.0_'\"$F\"'.apk' && apk add --allow-untrusted /tmp/arcane.apk && rm -f /tmp/arcane.apk"
+      "url": "https://github.com/getarcaneapp/arcane",
+      "cmd": "apk add --allow-untrusted dockerd docker && /etc/init.d/dockerd start && sleep 2 && docker rm -f arcane 2>/dev/null; KEY=$(head -c 24 /dev/urandom | od -An -tx1 | tr -d ' \\n'); docker run -d --name arcane --restart unless-stopped -p 3552:3552 -v /var/run/docker.sock:/var/run/docker.sock -v arcane-data:/app/data -e ENCRYPTION_KEY=\"$KEY\" -e TZ=Asia/Shanghai getarcaneapp/manager:latest && echo \"ARCANE_OK 面板地址: http://路由器IP:3552\""
     }
   ]
 }
