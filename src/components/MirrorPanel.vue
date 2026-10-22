@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { ref } from 'vue'
-import { api } from '../api/tauri'
+import { api, runBatch } from '../api/tauri'
 import { store, pushLog } from '../store'
 import type { MirrorLatency } from '../store'
 
@@ -53,16 +53,30 @@ async function doSwitch(m: Mirror) {
     switching.value = ''
   }
 }
+/** 更新软件包: apk update && apk upgrade(命令自带 update, 跳过全局更新) */
+async function doUpgradePackages() {
+  if (!store.connected || store.installing) return
+  store.installing = true
+  pushLog({ stream: 'sys', text: '==> 更新软件包: apk update && apk upgrade' })
+  await runBatch(['apk update && apk upgrade'], true, true)
+  store.installing = false
+}
 </script>
 
 <template>
   <div class="bg-white rounded-lg shadow-sm border border-slate-200 p-4">
     <div class="flex items-center justify-between mb-3">
       <div class="font-semibold text-slate-700">镜像源测速与切换</div>
-      <button @click="doTest" :disabled="!store.connected || testing"
-        class="bg-teal-600 hover:bg-teal-700 text-white text-xs px-3 py-1.5 rounded disabled:opacity-40">
-        {{ testing ? '测速中...' : '路由器端测速' }}
-      </button>
+      <div class="flex gap-2">
+        <button @click="doUpgradePackages" :disabled="!store.connected || store.installing"
+          class="bg-sky-600 hover:bg-sky-700 text-white text-xs px-3 py-1.5 rounded disabled:opacity-40">
+          更新软件包
+        </button>
+        <button @click="doTest" :disabled="!store.connected || testing"
+          class="bg-slate-700 hover:bg-slate-800 text-white text-xs px-3 py-1.5 rounded disabled:opacity-40">
+          {{ testing ? '测速中...' : '测速(路由器执行)' }}
+        </button>
+      </div>
     </div>
     <div class="space-y-2">
       <div v-for="m in (results.length ? results.map(r => ({ ...MIRRORS.find(x => x.domain === r.domain)!, latency: r.latency_ms })) : MIRRORS.map(m => ({ ...m, latency: null as number | null })))"

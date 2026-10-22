@@ -1,7 +1,7 @@
 <script setup lang="ts">
-import { computed, onMounted, ref } from 'vue'
-import { loadPlugins, buildInstallCommand, buildUpgradeCommand, isArchCompatible } from '../api/plugins'
-import { api } from '../api/tauri'
+import { computed, onMounted, ref, watch } from 'vue'
+import { loadPlugins, buildInstallCommand, buildUpgradeCommand, buildUninstallCommand, isArchCompatible } from '../api/plugins'
+import { api, runBatch } from '../api/tauri'
 import { store, pushLog } from '../store'
 import type { PluginItem } from '../store'
 
@@ -20,7 +20,38 @@ onMounted(async () => {
   } finally {
     loading.value = false
   }
+  await refreshInstalled()
 })
+
+watch(
+  () => store.connected,
+  (v) => {
+    if (v) refreshInstalled()
+    else store.installed = []
+  }
+)
+
+/** 刷新路由器已安装包列表(apk list --installed) */
+async function refreshInstalled() {
+  if (!store.connected) {
+    store.installed = []
+    return
+  }
+  try {
+    const raw = await api.listInstalled()
+    store.installed = raw
+      .split('\n')
+      .map((l) => (l.trim().split(/\s+/)[0] || '').replace(/-\d.*$/, ''))
+      .filter(Boolean)
+  } catch {
+    /* 查询失败不影响界面 */
+  }
+}
+
+function isInstalled(p: PluginItem): boolean {
+  const first = (p.pkg || p.name).split(/\s+/)[0]
+  return store.installed.includes(first) || store.installed.includes(p.name)
+}
 
 const categories = computed(() => {
   const set = new Set(store.plugins.map((p) => p.category || '其他'))
@@ -64,14 +95,10 @@ async function doInstall() {
   const cmds = items.map(buildInstallCommand)
   store.installing = true
   pushLog({ stream: 'sys', text: `==> 开始批量安装 ${items.length} 个插件(串行,单条限时 120s)` })
-  try {
-    await api.install(cmds)
-  } catch (e) {
-    pushLog({ stream: 'err', text: `==> 批量任务异常: ${String(e)}` })
-  } finally {
-    store.installing = false
-    selected.value = new Set()
-  }
+  await runBatch(cmds, false, true)
+  store.installing = false
+  selected.value = new Set()
+  await refreshInstalled()
 }
 
 async function doAbort() {
@@ -84,14 +111,10 @@ async function doUpgrade(items: PluginItem[], label: string) {
   const cmds = items.map(buildUpgradeCommand)
   store.installing = true
   pushLog({ stream: 'sys', text: `==> 开始${label} ${items.length} 个插件(串行,单条限时 120s)` })
-  try {
-    await api.install(cmds)
-  } catch (e) {
-    pushLog({ stream: 'err', text: `==> 批量任务异常: ${String(e)}` })
-  } finally {
-    store.installing = false
-    selected.value = new Set()
-  }
+  await runBatch(cmds, false, false)
+  store.installing = false
+  selected.value = new Set()
+  await refreshInstalled()
 }
 
 function doUpgradeSelected() {
@@ -100,6 +123,18 @@ function doUpgradeSelected() {
 
 function doUpgradeAll() {
   doUpgrade(store.plugins.filter((p) => compatible(p)), '更新所有插件')
+}
+
+/** 卸载插件: apk del + 清理配置目录, 完成后刷新安装状态 */
+async function doUninstall(p: PluginItem) {
+  if (!store.connected || store.installing) return
+  if (!window.confirm(`确认卸载 ${p.name}?\n将同时清理 /etc/config 与 /etc 下相关配置文件,该操作不可恢复。`)) return
+  store.installing = true
+  pushLog({ stream: 'sys', text: `==> 卸载插件: ${p.name} (含配置清理)` })
+  await runBatch([buildUninstallCommand(p)], true, false)
+  store.installing = false
+  pushLog({ stream: 'sys', text: `==> ${p.name} 卸载流程结束` })
+  await refreshInstalled()
 }
 </script>
 
@@ -158,6 +193,7 @@ function doUpgradeAll() {
         <div class="flex-1">
           <div class="text-sm font-medium">
             {{ p.name }}
+            <span v-if="isInstalled(p)" class="ml-1 text-[10px] bg-emerald-100 text-emerald-700 rounded px-1.5 py-0.5">已安装</span>
             <span v-if="p.type === 'external'" class="ml-1 text-[10px] bg-amber-100 text-amber-700 rounded px-1.5 py-0.5">第三方APK</span>
             <span v-else class="ml-1 text-[10px] bg-teal-50 text-teal-600 rounded px-1.5 py-0.5">源内</span>
           </div>
@@ -166,6 +202,11 @@ function doUpgradeAll() {
             已禁用: 不兼容当前架构 {{ store.device?.arch || '未知' }} (要求 {{ (p.arch || []).join(' / ') }})
           </div>
         </div>
+        <button v-if="isInstalled(p)" @click.stop.prevent="doUninstall(p)"
+          :disabled="!store.connected || store.installing"
+          class="self-center bg-red-50 hover:bg-red-100 text-red-600 border border-red-200 text-xs px-2.5 py-1 rounded disabled:opacity-40">
+          卸载
+        </button>
       </label>
     </div>
   </div>

@@ -214,8 +214,18 @@ pub fn switch_mirror(state: State<AppState>, mirror_url: String) -> Result<(), S
         let guard = state.client.lock().unwrap();
         let client = guard.as_ref().context("尚未连接设备")?;
         let url = mirror_url.trim_end_matches('/');
+        // 若 /etc/apk/repositories 不存在(部分固件默认缺失), 先依据设备 release 信息按新镜像重建该文件
         let cmd = format!(
-            "cp /etc/apk/repositories /etc/apk/repositories.bak && \
+            ". /etc/openwrt_release; \
+             if [ ! -s /etc/apk/repositories ]; then \
+               rel=\"releases/$DISTRIB_RELEASE\"; \
+               [ \"$DISTRIB_RELEASE\" = \"SNAPSHOT\" ] && rel=\"snapshots\"; \
+               {{ echo \"{u}/$rel/targets/$DISTRIB_TARGET/packages/packages.adb\"; \
+                 for f in base luci packages routing telephony video; do \
+                   echo \"{u}/$rel/packages/$DISTRIB_ARCH/$f/packages.adb\"; \
+                 done; }} > /etc/apk/repositories; \
+             fi; \
+             cp /etc/apk/repositories /etc/apk/repositories.bak && \
              sed -i -e 's#https\\?://downloads\\.openwrt\\.org#{u}#g' \
                     -e 's#\\(https\\?://[^/[:space:]]*\\)/openwrt#{u}#g' \
              /etc/apk/repositories && apk update --allow-untrusted",
@@ -242,9 +252,19 @@ fn run_one(
     client.exec_stream(cmd, Duration::from_secs(CMD_TIMEOUT_SECS), abort, tx)
 }
 
-/// 串行批量执行: 先全局 apk update 一次,再逐条安装,实时流式推送日志
+/// 串行批量执行: 可选先全局 apk update 一次,再逐条执行,实时流式推送日志
+/// allow_untrusted: 全局 update 是否带 --allow-untrusted
+/// skip_update: 跳过全局 update(命令自带更新场景)
+/// stop_on_error: 单条失败是否中断后续
 #[tauri::command]
-pub fn install_plugins(app: AppHandle, state: State<AppState>, cmds: Vec<String>) -> Result<(), String> {
+pub fn install_plugins(
+    app: AppHandle,
+    state: State<AppState>,
+    cmds: Vec<String>,
+    allow_untrusted: bool,
+    skip_update: bool,
+    stop_on_error: bool,
+) -> Result<(), String> {
     let abort = state.abort.clone();
     abort.store(false, Ordering::Relaxed);
     let client_arc = state.client.clone();
@@ -269,11 +289,19 @@ pub fn install_plugins(app: AppHandle, state: State<AppState>, cmds: Vec<String>
             if cmds.is_empty() {
                 bail!("未选择任何插件");
             }
-            sys("==> 全局更新索引: apk update --allow-untrusted");
-            let code = run_one(&client_arc, "apk update --allow-untrusted", &abort, &tx)?;
-            if code != 0 {
-                bail!("全局 apk update 失败(退出码 {}),已终止批量任务", code);
+            if !skip_update {
+                let update_cmd = if allow_untrusted {
+                    "apk update --allow-untrusted"
+                } else {
+                    "apk update"
+                };
+                sys(&format!("==> 全局更新索引: {}", update_cmd));
+                let code = run_one(&client_arc, update_cmd, &abort, &tx)?;
+                if code != 0 {
+                    bail!("全局 apk update 失败(退出码 {}),已终止批量任务", code);
+                }
             }
+            let mut failed = 0usize;
             for (i, c) in cmds.iter().enumerate() {
                 if abort.load(Ordering::Relaxed) {
                     bail!("任务已被用户中止");
@@ -281,8 +309,22 @@ pub fn install_plugins(app: AppHandle, state: State<AppState>, cmds: Vec<String>
                 sys(&format!("==> [{}/{}] {}", i + 1, cmds.len(), c));
                 let code = run_one(&client_arc, c, &abort, &tx)?;
                 if code != 0 {
-                    bail!("插件安装失败(退出码 {}): {}", code, c);
+                    failed += 1;
+                    let _ = tx.send((
+                        "err".to_string(),
+                        format!("==> 命令失败(退出码 {}): {}", code, c),
+                    ));
+                    if stop_on_error {
+                        bail!("任务因失败中断: {}", c);
+                    }
                 }
+            }
+            if failed > 0 {
+                sys(&format!(
+                    "==> 完成, 成功 {} 项, 失败 {} 项",
+                    cmds.len() - failed,
+                    failed
+                ));
             }
             Ok(())
         };
@@ -301,6 +343,20 @@ pub fn install_plugins(app: AppHandle, state: State<AppState>, cmds: Vec<String>
         );
     });
     Ok(())
+}
+
+/// 查询路由器已安装软件包列表(原始输出,前端解析)
+#[tauri::command]
+pub fn list_installed(state: State<AppState>) -> Result<String, String> {
+    let guard = state.client.lock().unwrap();
+    let client = guard
+        .as_ref()
+        .context("尚未连接设备")
+        .map_err(|e: anyhow::Error| e.to_string())?;
+    let (out, _) = client
+        .exec("apk list --installed 2>/dev/null")
+        .map_err(|e| e.to_string())?;
+    Ok(out)
 }
 
 #[tauri::command]

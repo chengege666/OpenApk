@@ -37,6 +37,7 @@ export const store = reactive({
   gateError: '',
   plugins: [] as PluginItem[],
   pluginsSource: '',
+  installed: [] as string[],
   installing: false,
   logs: [] as LogLine[]
 })

@@ -3,6 +3,7 @@ import { onMounted, onUnmounted } from 'vue'
 import TopBar from './components/TopBar.vue'
 import MirrorPanel from './components/MirrorPanel.vue'
 import ProxySettings from './components/ProxySettings.vue'
+import InitPanel from './components/InitPanel.vue'
 import PluginList from './components/PluginList.vue'
 import TerminalPanel from './components/TerminalPanel.vue'
 import { onLog } from './api/tauri'
@@ -26,6 +27,7 @@ onUnmounted(() => {
       <div class="col-span-4 space-y-4 overflow-y-auto term-scroll">
         <MirrorPanel />
         <ProxySettings />
+        <InitPanel />
       </div>
       <div class="col-span-5 min-h-0">
         <PluginList />

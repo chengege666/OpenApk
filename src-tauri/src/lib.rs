@@ -19,6 +19,7 @@ pub fn run() {
             commands::test_mirrors,
             commands::switch_mirror,
             commands::install_plugins,
+            commands::list_installed,
             commands::abort_install,
         ])
         .run(tauri::generate_context!())

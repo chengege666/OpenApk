@@ -30,6 +30,19 @@ export function setProxyEnabled(on: boolean): void {
   localStorage.setItem('openapk_proxy_on', on ? '1' : '0')
 }
 
+/** 允许未信任 APK 安装开关(默认开启) */
+export function allowUntrusted(): boolean {
+  return localStorage.getItem('openapk_allow_untrusted') !== '0'
+}
+
+export function setAllowUntrusted(on: boolean): void {
+  localStorage.setItem('openapk_allow_untrusted', on ? '1' : '0')
+}
+
+function apkFlags(): string {
+  return allowUntrusted() ? '--allow-untrusted ' : ''
+}
+
 /** 对 GitHub 下载地址拼接加速代理前缀 */
 export function withProxy(url: string): string {
   if (proxyEnabled() && url.includes('https://github.com/')) {
@@ -84,12 +97,14 @@ export function buildInstallCommand(p: PluginItem): string {
   if (p.type === 'external' && p.url) {
     const url = withProxy(p.url)
     if (p.cmd) {
-      return p.cmd.split('{URL}').join(url)
+      let c = p.cmd.split('{URL}').join(url)
+      if (!allowUntrusted()) c = c.split('--allow-untrusted').join('')
+      return c
     }
     const file = `/tmp/openapk_${(p.pkg || p.name).replace(/[^a-zA-Z0-9_-]/g, '_')}.apk`
-    return `wget -q -O ${file} '${url}' && apk add --allow-untrusted ${file} && rm -f ${file}`
+    return `wget -q -O ${file} '${url}' && apk add ${apkFlags()}${file} && rm -f ${file}`
   }
-  return `apk add --allow-untrusted ${p.pkg || p.name}`
+  return `apk add ${apkFlags()}${p.pkg || p.name}`
 }
 
 /** 更新插件: 源内走 apk upgrade; 第三方 APK 重新下载安装即完成升级 */
@@ -97,7 +112,16 @@ export function buildUpgradeCommand(p: PluginItem): string {
   if (p.type === 'external' && p.url) {
     return buildInstallCommand(p)
   }
-  return `apk upgrade --allow-untrusted ${p.pkg || p.name}`
+  return `apk upgrade ${apkFlags()}${p.pkg || p.name}`
+}
+
+/** 卸载插件: apk del + 清理 /etc/config/<名> 与 /etc/<名> 配置目录 */
+export function buildUninstallCommand(p: PluginItem): string {
+  const pkgs = p.pkg || p.name
+  const bases = [...new Set([p.name, p.name.replace(/^luci-app-/, '')])]
+  const dirs = bases.flatMap((b) => [`/etc/config/${b}`, `/etc/${b}`])
+  const clean = dirs.map((d) => `[ -e '${d}' ] && rm -rf '${d}'`).join('; ')
+  return `apk del ${pkgs}; ${clean}; echo UNINSTALL_DONE`
 }
 
 /** 架构兼容过滤 */
