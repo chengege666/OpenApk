@@ -48,19 +48,19 @@
     },
     {
       "name": "luci-app-passwall",
-      "desc": "PassWall 代理客户端(主程序+中文翻译+依赖自动从 SourceForge 按架构补齐)",
+      "desc": "PassWall 代理客户端(官方 apk 源直装,自动添加 passwall-build 源,依赖全自动解析)",
       "category": "网络",
       "type": "external",
-      "url": "https://github.com/Openwrt-Passwall/openwrt-passwall/releases/download/26.10.22-2/25.12%2B_luci-app-passwall-26.10.22-r2.apk",
-      "cmd": "mkdir -p /tmp/pw && cd /tmp/pw && . /etc/openwrt_release; R=$(echo \"$DISTRIB_RELEASE\" | cut -d. -f1); V=\"packages-$R.12\"; [ \"$DISTRIB_RELEASE\" = \"SNAPSHOT\" ] && V=\"snapshots\"; RSS=\"https://sourceforge.net/projects/openwrt-passwall-build/rss?path=/releases/$V/$DISTRIB_ARCH/passwall_packages\"; L=$(wget -q --user-agent=\"Mozilla/5.0\" -O- \"$RSS\"); for d in dns2socks ipt2socks pdnsd-alt microsocks tcping chinadns-ng haveged; do u=$(echo \"$L\" | grep -o \"https://sourceforge.net[^\\\"'< ]*/$d-[0-9][^\\\"'< ]*\\.apk/download\" | head -1); if [ -n \"$u\" ]; then wget -q --user-agent=\"Mozilla/5.0\" -O \"$d.apk\" \"$u\" && echo \"[依赖] 已下载 $d\"; else echo \"[依赖] 未找到 $d\"; fi; done; wget -q -O passwall.apk '{URL}' && wget -q -O passwall_i18n.apk 'https://github.com/Openwrt-Passwall/openwrt-passwall/releases/download/26.10.22-2/25.12%2B_luci-i18n-passwall-zh-cn-26.10.22.apk' && apk add --allow-untrusted --force-overwrite *.apk; s=$?; cd /; rm -rf /tmp/pw; exit $s"
+      "url": "https://github.com/Openwrt-Passwall/openwrt-passwall/releases",
+      "cmd": ". /etc/openwrt_release; REL=${DISTRIB_RELEASE%.*}; P=\"https://master.dl.sourceforge.net/project/openwrt-passwall-build\"; wget -q -O /etc/apk/keys/openwrt-passwall-build.pem \"$P/apk.pub\" || { echo \"密钥下载失败\"; exit 1; }; if [ \"$DISTRIB_RELEASE\" = \"SNAPSHOT\" ]; then B=\"$P/snapshots/packages/$DISTRIB_ARCH\"; else B=\"$P/releases/packages-$REL/$DISTRIB_ARCH\"; fi; touch /etc/apk/repositories.d/customfeeds.list; for f in passwall_luci passwall_packages; do U=\"$B/$f/packages.adb\"; grep -qF \"$U\" /etc/apk/repositories.d/customfeeds.list || echo \"$U\" >> /etc/apk/repositories.d/customfeeds.list; done; apk update && apk add --allow-untrusted luci-app-passwall luci-i18n-passwall-zh-cn"
     },
     {
       "name": "luci-app-passwall2",
-      "desc": "PassWall2 代理客户端(主程序+中文翻译+依赖自动从 SourceForge 按架构补齐)",
+      "desc": "PassWall2 代理客户端(官方 apk 源直装,自动添加 passwall-build 源,依赖全自动解析)",
       "category": "网络",
       "type": "external",
-      "url": "https://github.com/Openwrt-Passwall/openwrt-passwall2/releases/download/26.10.20-1/luci-app-passwall2-26.10.20-r1.apk",
-      "cmd": "mkdir -p /tmp/pw2 && cd /tmp/pw2 && . /etc/openwrt_release; R=$(echo \"$DISTRIB_RELEASE\" | cut -d. -f1); V=\"packages-$R.12\"; [ \"$DISTRIB_RELEASE\" = \"SNAPSHOT\" ] && V=\"snapshots\"; RSS=\"https://sourceforge.net/projects/openwrt-passwall-build/rss?path=/releases/$V/$DISTRIB_ARCH/passwall_packages\"; L=$(wget -q --user-agent=\"Mozilla/5.0\" -O- \"$RSS\"); for d in dns2socks ipt2socks pdnsd-alt microsocks tcping chinadns-ng haveged; do u=$(echo \"$L\" | grep -o \"https://sourceforge.net[^\\\"'< ]*/$d-[0-9][^\\\"'< ]*\\.apk/download\" | head -1); if [ -n \"$u\" ]; then wget -q --user-agent=\"Mozilla/5.0\" -O \"$d.apk\" \"$u\" && echo \"[依赖] 已下载 $d\"; else echo \"[依赖] 未找到 $d\"; fi; done; wget -q -O passwall2.apk '{URL}' && wget -q -O passwall2_i18n.apk 'https://github.com/Openwrt-Passwall/openwrt-passwall2/releases/download/26.10.20-1/luci-i18n-passwall2-zh-cn-26.10.20.apk' && apk add --allow-untrusted --force-overwrite *.apk; s=$?; cd /; rm -rf /tmp/pw2; exit $s"
+      "url": "https://github.com/Openwrt-Passwall/openwrt-passwall2/releases",
+      "cmd": ". /etc/openwrt_release; REL=${DISTRIB_RELEASE%.*}; P=\"https://master.dl.sourceforge.net/project/openwrt-passwall-build\"; wget -q -O /etc/apk/keys/openwrt-passwall-build.pem \"$P/apk.pub\" || { echo \"密钥下载失败\"; exit 1; }; if [ \"$DISTRIB_RELEASE\" = \"SNAPSHOT\" ]; then B=\"$P/snapshots/packages/$DISTRIB_ARCH\"; else B=\"$P/releases/packages-$REL/$DISTRIB_ARCH\"; fi; touch /etc/apk/repositories.d/customfeeds.list; for f in passwall_luci passwall_packages passwall2; do U=\"$B/$f/packages.adb\"; grep -qF \"$U\" /etc/apk/repositories.d/customfeeds.list || echo \"$U\" >> /etc/apk/repositories.d/customfeeds.list; done; apk update && apk add --allow-untrusted luci-app-passwall2 luci-i18n-passwall2-zh-cn"
     },
     {
       "name": "luci-app-smartdns",
