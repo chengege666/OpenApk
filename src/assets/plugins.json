@@ -1,0 +1,42 @@
+{
+  "version": 1,
+  "updated": "2026-10-22",
+  "plugins": [
+    {
+      "name": "luci-i18n-base-zh-cn",
+      "desc": "LuCI 基础界面简体中文语言包",
+      "category": "系统",
+      "type": "repo",
+      "pkg": "luci-i18n-base-zh-cn"
+    },
+    {
+      "name": "luci-app-upnp",
+      "desc": "UPnP 端口自动映射服务(含中文翻译)",
+      "category": "网络",
+      "type": "repo",
+      "pkg": "luci-app-upnp luci-i18n-upnp-zh-cn"
+    },
+    {
+      "name": "luci-app-wol",
+      "desc": "网络唤醒 Wake-on-LAN",
+      "category": "网络",
+      "type": "repo",
+      "pkg": "luci-app-wol luci-i18n-wol-zh-cn"
+    },
+    {
+      "name": "htop",
+      "desc": "交互式进程查看器",
+      "category": "系统",
+      "type": "repo",
+      "pkg": "htop"
+    },
+    {
+      "name": "luci-app-openclash",
+      "desc": "OpenClash 代理客户端(mihomo 内核,官方 APK,含全部依赖)",
+      "category": "网络",
+      "type": "external",
+      "url": "https://github.com/vernesong/OpenClash/releases/download/v0.47.156/luci-app-openclash-0.47.156.apk",
+      "cmd": "apk add --allow-untrusted bash dnsmasq-full curl ca-bundle ip-full ruby ruby-yaml kmod-tun kmod-inet-diag unzip kmod-nft-tproxy luci-compat luci luci-base && wget -q -O /tmp/openclash.apk '{URL}' && apk add -q --force-overwrite --clean-protected --allow-untrusted /tmp/openclash.apk && rm -f /tmp/openclash.apk"
+    }
+  ]
+}
