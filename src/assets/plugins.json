@@ -141,6 +141,14 @@
       "type": "external",
       "url": "https://github.com/getarcaneapp/arcane",
       "cmd": "apk add --allow-untrusted dockerd docker && /etc/init.d/dockerd start && sleep 2 && docker rm -f arcane 2>/dev/null; KEY=$(head -c 24 /dev/urandom | od -An -tx1 | tr -d ' \\n'); docker run -d --name arcane --restart unless-stopped -p 3552:3552 -v /var/run/docker.sock:/var/run/docker.sock -v arcane-data:/app/data -e ENCRYPTION_KEY=\"$KEY\" -e TZ=Asia/Shanghai getarcaneapp/manager:latest && echo \"ARCANE_OK 面板地址: http://路由器IP:3552\""
+    },
+    {
+      "name": "luci-app-store",
+      "desc": "iStore 软件商店(OpenWRT 标准软件中心,纯脚本实现,搜索安装插件与教程,仅支持 x86_64/arm64)",
+      "category": "系统",
+      "type": "external",
+      "url": "https://github.com/linkease/openwrt-app-actions/raw/main/applications/luci-app-systools/root/usr/share/systools/istore-reinstall.run",
+      "cmd": "cd /tmp && wget -q -O istore-reinstall.run '{URL}' && chmod 755 istore-reinstall.run && ./istore-reinstall.run && rm -f istore-reinstall.run"
     }
   ]
 }
