@@ -90,6 +90,13 @@
       "cmd": "mkdir -p /tmp/lucky && cd /tmp/lucky && . /etc/openwrt_release; wget -q -O lucky.tar.gz 'https://github.com/sirpdboy/luci-app-lucky/releases/download/v2.27.2/SNAPSHOT-'\"$DISTRIB_ARCH\"'.tar.gz' && tar xzf lucky.tar.gz && apk add --allow-untrusted packages_ci/*.apk; s=$?; cd /; rm -rf /tmp/lucky; exit $s"
     },
     {
+      "name": "luci-app-cloudflared",
+      "desc": "Cloudflare 隧道 cloudflared(官方源直装,含 LuCI 界面与中文翻译)",
+      "category": "网络",
+      "type": "repo",
+      "pkg": "cloudflared luci-app-cloudflared luci-i18n-cloudflared-zh-cn"
+    },
+    {
       "name": "luci-app-smartdns",
       "desc": "SmartDNS 智能分流 DNS(核心按路由器架构自动匹配,含中文界面)",
       "category": "网络",
