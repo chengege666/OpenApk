@@ -13,8 +13,7 @@ interface Mirror {
 const MIRRORS: Mirror[] = [
   { name: '官方源', domain: 'downloads.openwrt.org', url: 'https://downloads.openwrt.org' },
   { name: '清华大学 TUNA', domain: 'mirrors.tuna.tsinghua.edu.cn', url: 'https://mirrors.tuna.tsinghua.edu.cn/openwrt' },
-  { name: '中科大 USTC', domain: 'mirrors.ustc.edu.cn', url: 'https://mirrors.ustc.edu.cn/openwrt' },
-  { name: '阿里云', domain: 'mirrors.aliyun.com', url: 'https://mirrors.aliyun.com/openwrt' }
+  { name: '中科大 USTC', domain: 'mirrors.ustc.edu.cn', url: 'https://mirrors.ustc.edu.cn/openwrt' }
 ]
 
 const results = ref<MirrorLatency[]>([])
@@ -41,16 +40,18 @@ async function doTest() {
 }
 
 async function doSwitch(m: Mirror) {
-  if (!store.connected || switching.value) return
+  if (!store.connected || switching.value || store.installing) return
   switching.value = m.domain
+  store.installing = true // 挂入全局锁定: 启用中止按钮,互斥其他操作
   pushLog({ stream: 'sys', text: `==> 切换软件源到 [${m.name}] ${m.url} (已自动备份)` })
   try {
     await api.switchMirror(m.url)
     pushLog({ stream: 'sys', text: `==> 换源成功: ${m.name}, apk update 校验通过` })
   } catch (e) {
-    pushLog({ stream: 'err', text: `==> 换源失败并已自动回滚: ${String(e)}` })
+    pushLog({ stream: 'err', text: `==> 换源失败/已中止,已自动回滚: ${String(e)}` })
   } finally {
     switching.value = ''
+    store.installing = false // 状态恢复: 解除锁定
   }
 }
 /** 更新软件包: apk update && apk upgrade(命令自带 update, 跳过全局更新) */
@@ -72,7 +73,7 @@ async function doUpgradePackages() {
           class="bg-sky-600 hover:bg-sky-700 text-white text-xs px-3 py-1.5 rounded disabled:opacity-40">
           更新软件包
         </button>
-        <button @click="doTest" :disabled="!store.connected || testing"
+        <button @click="doTest" :disabled="!store.connected || testing || store.installing"
           class="bg-slate-700 hover:bg-slate-800 text-white text-xs px-3 py-1.5 rounded disabled:opacity-40">
           {{ testing ? '测速中...' : '测速(路由器执行)' }}
         </button>
@@ -90,7 +91,7 @@ async function doUpgradePackages() {
           <span v-if="m.latency !== null" class="text-teal-600 font-mono text-xs">{{ m.latency }} ms</span>
           <span v-else-if="results.length" class="text-red-500 font-mono text-xs">超时</span>
           <span v-else class="text-slate-300 font-mono text-xs">--</span>
-          <button @click="doSwitch(m)" :disabled="!store.connected || !!switching"
+          <button @click="doSwitch(m)" :disabled="!store.connected || !!switching || store.installing"
             class="bg-slate-600 hover:bg-slate-700 text-white text-xs px-3 py-1 rounded disabled:opacity-40">
             {{ switching === m.domain ? '切换中...' : '使用此源' }}
           </button>

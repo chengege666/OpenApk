@@ -146,9 +146,10 @@ pub fn disconnect_device(state: State<AppState>) -> Result<(), String> {
 }
 
 /// 路由器端多线程测速: 每个镜像独立 SSH 连接并行执行 ping(失败回退 wget spider)
+/// 异步化: 阻塞工作放入 spawn_blocking,防止同步命令卡死 UI 主线程
 #[tauri::command]
-pub fn test_mirrors(
-    state: State<AppState>,
+pub async fn test_mirrors(
+    state: State<'_, AppState>,
     mirrors: Vec<MirrorReq>,
 ) -> Result<Vec<MirrorLatency>, String> {
     let cred = state
@@ -159,26 +160,31 @@ pub fn test_mirrors(
         .context("尚未连接设备")
         .map_err(|e: anyhow::Error| e.to_string())?;
 
-    let mut handles = Vec::new();
-    for m in mirrors {
-        let c = cred.clone();
-        handles.push(thread::spawn(move || {
-            let latency_ms = probe_from_router(&c, &m.domain).unwrap_or(None);
-            MirrorLatency {
-                name: m.name,
-                domain: m.domain,
-                latency_ms,
-            }
-        }));
-    }
-    let mut out: Vec<MirrorLatency> = handles.into_iter().filter_map(|h| h.join().ok()).collect();
-    out.sort_by(|a, b| match (a.latency_ms, b.latency_ms) {
-        (Some(x), Some(y)) => x.partial_cmp(&y).unwrap_or(std::cmp::Ordering::Equal),
-        (Some(_), None) => std::cmp::Ordering::Less,
-        (None, Some(_)) => std::cmp::Ordering::Greater,
-        (None, None) => std::cmp::Ordering::Equal,
-    });
-    Ok(out)
+    tauri::async_runtime::spawn_blocking(move || {
+        let mut handles = Vec::new();
+        for m in mirrors {
+            let c = cred.clone();
+            handles.push(thread::spawn(move || {
+                let latency_ms = probe_from_router(&c, &m.domain).unwrap_or(None);
+                MirrorLatency {
+                    name: m.name,
+                    domain: m.domain,
+                    latency_ms,
+                }
+            }));
+        }
+        let mut out: Vec<MirrorLatency> =
+            handles.into_iter().filter_map(|h| h.join().ok()).collect();
+        out.sort_by(|a, b| match (a.latency_ms, b.latency_ms) {
+            (Some(x), Some(y)) => x.partial_cmp(&y).unwrap_or(std::cmp::Ordering::Equal),
+            (Some(_), None) => std::cmp::Ordering::Less,
+            (None, Some(_)) => std::cmp::Ordering::Greater,
+            (None, None) => std::cmp::Ordering::Equal,
+        });
+        out
+    })
+    .await
+    .map_err(|e| e.to_string())
 }
 
 fn probe_from_router(cred: &Cred, domain: &str) -> Result<Option<f64>> {
@@ -205,13 +211,22 @@ fn probe_from_router(cred: &Cred, domain: &str) -> Result<Option<f64>> {
 }
 
 /// 原子性换源: 备份 -> sed 替换域名 -> apk update 校验 -> 失败自动回滚
+/// 异步化: spawn_blocking 执行阻塞 SSH 操作,流式推送日志,支持中止信号,杜绝 UI 假死
 #[tauri::command]
-pub fn switch_mirror(state: State<AppState>, mirror_url: String) -> Result<(), String> {
-    (|| -> Result<()> {
+pub async fn switch_mirror(
+    app: AppHandle,
+    state: State<'_, AppState>,
+    mirror_url: String,
+) -> Result<(), String> {
+    let client_arc = state.client.clone();
+    let abort = state.abort.clone();
+    abort.store(false, Ordering::Relaxed);
+
+    tauri::async_runtime::spawn_blocking(move || -> Result<()> {
         if !mirror_url.starts_with("https://") {
             bail!("非法镜像地址");
         }
-        let guard = state.client.lock().unwrap();
+        let guard = client_arc.lock().unwrap();
         let client = guard.as_ref().context("尚未连接设备")?;
         let url = mirror_url.trim_end_matches('/');
         // 覆盖 /etc/apk/repositories 与 /etc/apk/repositories.d/*.list 全部源配置;
@@ -237,18 +252,45 @@ pub fn switch_mirror(state: State<AppState>, mirror_url: String) -> Result<(), S
              apk update --allow-untrusted",
             u = url
         );
-        let (out, code) = client.exec(&cmd)?;
-        if code != 0 {
+
+        // 流式执行 + mpsc -> Tauri 事件 实时日志
+        let (tx, rx) = mpsc::channel::<(String, String)>();
+        let app_fwd = app.clone();
+        let fwd = thread::spawn(move || {
+            while let Ok((stream, text)) = rx.recv() {
+                let _ = app_fwd.emit(
+                    "openapk://log",
+                    serde_json::json!({ "stream": stream, "text": text }),
+                );
+            }
+        });
+        let _ = tx.send(("sys".into(), "==> 写入新源并校验(apk update),可随时中止...".into()));
+        let res = client.exec_stream(&cmd, Duration::from_secs(CMD_TIMEOUT_SECS), &abort, &tx);
+        drop(tx); // 释放发送端,让日志转发线程退出
+        let _ = fwd.join();
+
+        let rollback = || {
             let _ = client.exec(
                 "for f in /etc/apk/repositories /etc/apk/repositories.d/*.list; do \
                    [ -f \"$f.bak\" ] && mv -f \"$f.bak\" \"$f\"; \
                  done",
             );
-            bail!("换源后 apk update 校验失败,已自动回滚至原软件源。{}", out);
+        };
+        match res {
+            Ok(0) => Ok(()),
+            Ok(code) => {
+                rollback();
+                bail!("换源后 apk update 校验失败(退出码 {}),已自动回滚至原软件源", code)
+            }
+            Err(e) => {
+                rollback();
+                bail!("换源中断({}),已自动回滚至原软件源", e)
+            }
         }
-        Ok(())
-    })()
-    .map_err(|e| e.to_string())
+    })
+    .await
+    .map_err(|e| e.to_string())?
+    .map_err(|e: anyhow::Error| e.to_string())
 }
 
 fn run_one(
