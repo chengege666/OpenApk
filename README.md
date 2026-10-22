@@ -28,7 +28,6 @@
 | 平台 | 文件 |
 |---|---|
 | Windows | `OpenApk_x.x.x_x64-setup.exe` / `.msi` |
-| macOS | `OpenApk_x.x.x_universal.dmg` |
 
 ## 本地开发
 
