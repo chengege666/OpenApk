@@ -29,6 +29,9 @@ jobs:
         with:
           node-version: 20
 
+      - name: Sync version from tag
+        run: node .github/scripts/sync-version.mjs "${{ github.event.inputs.tag || github.ref_name }}"
+
       - name: Setup Rust
         uses: dtolnay/rust-toolchain@stable
 
@@ -45,6 +48,6 @@ jobs:
         with:
           tagName: ${{ github.event.inputs.tag || github.ref_name }}
           releaseName: 'OpenApk ${{ github.event.inputs.tag || github.ref_name }}'
-          releaseBody: 'OpenApk 跨平台自动构建发布：Windows (.exe/.msi) 与 macOS (.dmg)。'
+          releaseBody: 'OpenApk Windows 自动构建发布 (.exe/.msi)。'
           releaseDraft: false
           prerelease: false
