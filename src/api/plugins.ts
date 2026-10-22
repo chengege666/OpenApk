@@ -97,7 +97,12 @@ export function buildInstallCommand(p: PluginItem): string {
   if (p.type === 'external' && p.url) {
     const url = withProxy(p.url)
     if (p.cmd) {
-      let c = p.cmd.split('{URL}').join(url)
+      let c = p.cmd
+      // cmd 模板中硬编码的其余 GitHub 直链统一套用加速前缀
+      if (proxyEnabled()) {
+        c = c.split(`'https://github.com/`).join(`'${getProxyPrefix()}https://github.com/`)
+      }
+      c = c.split('{URL}').join(url)
       if (!allowUntrusted()) c = c.split('--allow-untrusted').join('')
       return c
     }

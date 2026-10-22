@@ -37,6 +37,76 @@
       "type": "external",
       "url": "https://github.com/vernesong/OpenClash/releases/download/v0.47.156/luci-app-openclash-0.47.156.apk",
       "cmd": "apk add --allow-untrusted bash dnsmasq-full curl ca-bundle ip-full ruby ruby-yaml kmod-tun kmod-inet-diag unzip kmod-nft-tproxy luci-compat luci luci-base && wget -q -O /tmp/openclash.apk '{URL}' && apk add -q --force-overwrite --clean-protected --allow-untrusted /tmp/openclash.apk && rm -f /tmp/openclash.apk"
+    },
+    {
+      "name": "luci-app-daed",
+      "desc": "daed 大鹅代理客户端(dae 内核,核心按路由器架构自动匹配)",
+      "category": "网络",
+      "type": "external",
+      "url": "https://github.com/QiuSimons/luci-app-daed/releases/download/daed_2026.07.31-r1/luci-app-daed-1.4-r1-openwrt-25.12.apk",
+      "cmd": "A=$(apk --print-arch); case \"$A\" in aarch64*) F=aarch64_generic;; x86_64) F=x86_64;; i386|x86) F=i386_pentium4;; *) echo \"不支持的架构 $A\"; exit 1;; esac && wget -q -O /tmp/daed_core.apk 'https://github.com/QiuSimons/luci-app-daed/releases/download/daed_2026.07.31-r1/daed-2026.07.31-r1-'\"$F\"'-openwrt-25.12.apk' && wget -q -O /tmp/daed_luci.apk '{URL}' && wget -q -O /tmp/daed_i18n.apk 'https://github.com/QiuSimons/luci-app-daed/releases/download/daed_2026.07.31-r1/luci-i18n-daed-zh-cn-25.283.11553.bce4b5f-openwrt-25.12.apk' && apk add --allow-untrusted /tmp/daed_core.apk /tmp/daed_luci.apk /tmp/daed_i18n.apk && rm -f /tmp/daed_*.apk"
+    },
+    {
+      "name": "luci-app-passwall",
+      "desc": "PassWall 代理客户端(含中文翻译,25.12 专用版)",
+      "category": "网络",
+      "type": "external",
+      "url": "https://github.com/Openwrt-Passwall/openwrt-passwall/releases/download/26.10.22-2/25.12%2B_luci-app-passwall-26.10.22-r2.apk",
+      "cmd": "wget -q -O /tmp/passwall.apk '{URL}' && wget -q -O /tmp/passwall_i18n.apk 'https://github.com/Openwrt-Passwall/openwrt-passwall/releases/download/26.10.22-2/25.12%2B_luci-i18n-passwall-zh-cn-26.10.22.apk' && apk add --allow-untrusted /tmp/passwall.apk /tmp/passwall_i18n.apk && rm -f /tmp/passwall*.apk"
+    },
+    {
+      "name": "luci-app-passwall2",
+      "desc": "PassWall2 代理客户端(含中文翻译)",
+      "category": "网络",
+      "type": "external",
+      "url": "https://github.com/Openwrt-Passwall/openwrt-passwall2/releases/download/26.10.20-1/luci-app-passwall2-26.10.20-r1.apk",
+      "cmd": "wget -q -O /tmp/passwall2.apk '{URL}' && wget -q -O /tmp/passwall2_i18n.apk 'https://github.com/Openwrt-Passwall/openwrt-passwall2/releases/download/26.10.20-1/luci-i18n-passwall2-zh-cn-26.10.20.apk' && apk add --allow-untrusted /tmp/passwall2.apk /tmp/passwall2_i18n.apk && rm -f /tmp/passwall2*.apk"
+    },
+    {
+      "name": "luci-app-smartdns",
+      "desc": "SmartDNS 智能分流 DNS(核心按路由器架构自动匹配,含中文界面)",
+      "category": "网络",
+      "type": "external",
+      "url": "https://github.com/pymumu/smartdns/releases/download/Release48.4/luci-app-smartdns.1.2026.08.05-0921.all-luci-all.apk",
+      "cmd": "A=$(apk --print-arch); case \"$A\" in x86_64) F=x86_64;; aarch64*) F=aarch64;; arm*) F=arm;; mipsel*) F=mipsel;; mips*) F=mips;; i386|x86) F=x86;; *) echo \"不支持的架构 $A\"; exit 1;; esac && wget -q -O /tmp/smartdns_core.apk 'https://github.com/pymumu/smartdns/releases/download/Release48.4/smartdns.1.2026.08.05-0921.'\"$F\"'-openwrt-all.apk' && wget -q -O /tmp/smartdns_luci.apk '{URL}' && apk add --allow-untrusted /tmp/smartdns_core.apk /tmp/smartdns_luci.apk && rm -f /tmp/smartdns_*.apk"
+    },
+    {
+      "name": "luci-theme-argon",
+      "desc": "Argon 主题(含配置面板与中文翻译)",
+      "category": "主题",
+      "type": "external",
+      "url": "https://github.com/jerrykuku/luci-theme-argon/releases/download/v3.1.0/luci-theme-argon-3.1.0-r1.apk",
+      "cmd": "wget -q -O /tmp/argon.apk '{URL}' && wget -q -O /tmp/argon_cfg.apk 'https://github.com/jerrykuku/luci-theme-argon/releases/download/v3.1.0/luci-app-argon-config-3.1.0-r1.apk' && wget -q -O /tmp/argon_i18n.apk 'https://github.com/jerrykuku/luci-theme-argon/releases/download/v3.1.0/luci-i18n-argon-config-zh-cn-3.1.0-r1.apk' && apk add --allow-untrusted /tmp/argon.apk /tmp/argon_cfg.apk /tmp/argon_i18n.apk && rm -f /tmp/argon*.apk"
+    },
+    {
+      "name": "luci-theme-aurora",
+      "desc": "Aurora 主题(毛玻璃风格)",
+      "category": "主题",
+      "type": "external",
+      "url": "https://github.com/eamonxg/luci-theme-aurora/releases/download/v1.4.0/luci-theme-aurora-1.4.0-r20260920.apk"
+    },
+    {
+      "name": "luci-app-run",
+      "desc": "run 插件(作者自用发布)",
+      "category": "系统",
+      "type": "external",
+      "url": "https://github.com/chengege666/apk-run/releases/download/main/luci-app-run-1.0.0-r3.apk"
+    },
+    {
+      "name": "luci-app-diskman",
+      "desc": "DiskMan 磁盘管理(分区/格式化/挂载,含中文翻译)",
+      "category": "系统",
+      "type": "external",
+      "url": "https://github.com/sbwml/luci-app-diskman/releases/download/v1.0.0-r4/luci-app-diskman-1.0.0-r4.apk",
+      "cmd": "wget -q -O /tmp/diskman.apk '{URL}' && wget -q -O /tmp/diskman_i18n.apk 'https://github.com/sbwml/luci-app-diskman/releases/download/v1.0.0-r4/luci-i18n-diskman-zh-cn-26.123.16888.215a3d3.apk' && apk add --allow-untrusted /tmp/diskman.apk /tmp/diskman_i18n.apk && rm -f /tmp/diskman*.apk"
+    },
+    {
+      "name": "arcane-cli",
+      "desc": "Arcane 命令行工具(按路由器架构自动匹配)",
+      "category": "系统",
+      "type": "external",
+      "url": "https://github.com/getarcaneapp/arcane/releases/download/v2.17.0/arcane-cli_2.17.0_x86_64.apk",
+      "cmd": "A=$(apk --print-arch); case \"$A\" in x86_64) F=x86_64;; aarch64*) F=aarch64;; armv7*) F=armv7;; *) echo \"不支持的架构 $A\"; exit 1;; esac && wget -q -O /tmp/arcane.apk 'https://github.com/getarcaneapp/arcane/releases/download/v2.17.0/arcane-cli_2.17.0_'\"$F\"'.apk' && apk add --allow-untrusted /tmp/arcane.apk && rm -f /tmp/arcane.apk"
     }
   ]
 }
