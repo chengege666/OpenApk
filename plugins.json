@@ -149,6 +149,14 @@
       "type": "external",
       "url": "https://github.com/linkease/openwrt-app-actions/raw/main/applications/luci-app-systools/root/usr/share/systools/istore-reinstall.run",
       "cmd": "cd /tmp && wget -q -O istore-reinstall.run '{URL}' && chmod 755 istore-reinstall.run && ./istore-reinstall.run && rm -f istore-reinstall.run"
+    },
+    {
+      "name": "luci-app-uninstall",
+      "desc": "高级卸载(iStoreOS 一键不留痕卸载插件,删除配置/卸载依赖/清空缓存,支持 X86/ARM)",
+      "category": "系统",
+      "type": "external",
+      "url": "https://xz.vumstar.com/download/legacy",
+      "cmd": "cd /tmp && wget -q -O uninstall.run '{URL}' && chmod 755 uninstall.run && ./uninstall.run && rm -f uninstall.run"
     }
   ]
 }
