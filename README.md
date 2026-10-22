@@ -46,22 +46,7 @@ git push origin v1.0.0
 
 推送 tag 后 GitHub Actions 自动完成多平台编译并创建 Release。
 
-## plugins.json 配置规范
 
-仓库根目录的 `plugins.json` 为插件菜单数据源，需同步发布到 GitHub `main` 分支与 Gitee `master` 分支。
-
-```json
-{
-  "name": "luci-app-upnp",
-  "desc": "插件描述",
-  "category": "网络",
-  "type": "repo | external",
-  "pkg": "源内包名(type=repo 时必填)",
-  "url": "第三方 APK 直链(type=external 时必填)",
-  "cmd": "可选: 自定义安装命令模板, {URL} 会被替换为代理处理后的 url",
-  "arch": ["可选: 限定架构列表, 不匹配时前端置灰"]
-}
-```
 
 ## 许可证
 
