@@ -214,26 +214,36 @@ pub fn switch_mirror(state: State<AppState>, mirror_url: String) -> Result<(), S
         let guard = state.client.lock().unwrap();
         let client = guard.as_ref().context("尚未连接设备")?;
         let url = mirror_url.trim_end_matches('/');
-        // 若 /etc/apk/repositories 不存在(部分固件默认缺失), 先依据设备 release 信息按新镜像重建该文件
+        // 覆盖 /etc/apk/repositories 与 /etc/apk/repositories.d/*.list 全部源配置;
+        // 仅当所有文件都不存在时, 才依据设备 release 信息按新镜像重建 repositories
         let cmd = format!(
-            ". /etc/openwrt_release; \
-             if [ ! -s /etc/apk/repositories ]; then \
+            "found=0; \
+             for f in /etc/apk/repositories /etc/apk/repositories.d/*.list; do \
+               [ -f \"$f\" ] || continue; \
+               found=1; \
+               cp \"$f\" \"$f.bak\" || exit 1; \
+               sed -i -e 's#https\\?://downloads\\.openwrt\\.org#{u}#g' \
+                      -e 's#\\(https\\?://[^/[:space:]]*\\)/openwrt#{u}#g' \"$f\"; \
+             done; \
+             if [ \"$found\" = \"0\" ]; then \
+               . /etc/openwrt_release; \
                rel=\"releases/$DISTRIB_RELEASE\"; \
                [ \"$DISTRIB_RELEASE\" = \"SNAPSHOT\" ] && rel=\"snapshots\"; \
                {{ echo \"{u}/$rel/targets/$DISTRIB_TARGET/packages/packages.adb\"; \
-                 for f in base luci packages routing telephony video; do \
-                   echo \"{u}/$rel/packages/$DISTRIB_ARCH/$f/packages.adb\"; \
+                 for p in base luci packages routing telephony video; do \
+                   echo \"{u}/$rel/packages/$DISTRIB_ARCH/$p/packages.adb\"; \
                  done; }} > /etc/apk/repositories; \
              fi; \
-             cp /etc/apk/repositories /etc/apk/repositories.bak && \
-             sed -i -e 's#https\\?://downloads\\.openwrt\\.org#{u}#g' \
-                    -e 's#\\(https\\?://[^/[:space:]]*\\)/openwrt#{u}#g' \
-             /etc/apk/repositories && apk update --allow-untrusted",
+             apk update --allow-untrusted",
             u = url
         );
         let (out, code) = client.exec(&cmd)?;
         if code != 0 {
-            let _ = client.exec("mv /etc/apk/repositories.bak /etc/apk/repositories");
+            let _ = client.exec(
+                "for f in /etc/apk/repositories /etc/apk/repositories.d/*.list; do \
+                   [ -f \"$f.bak\" ] && mv -f \"$f.bak\" \"$f\"; \
+                 done",
+            );
             bail!("换源后 apk update 校验失败,已自动回滚至原软件源。{}", out);
         }
         Ok(())
