@@ -63,6 +63,33 @@
       "cmd": ". /etc/openwrt_release; REL=${DISTRIB_RELEASE%.*}; P=\"https://master.dl.sourceforge.net/project/openwrt-passwall-build\"; wget -q -O /etc/apk/keys/openwrt-passwall-build.pem \"$P/apk.pub\" || { echo \"密钥下载失败\"; exit 1; }; if [ \"$DISTRIB_RELEASE\" = \"SNAPSHOT\" ]; then B=\"$P/snapshots/packages/$DISTRIB_ARCH\"; else B=\"$P/releases/packages-$REL/$DISTRIB_ARCH\"; fi; touch /etc/apk/repositories.d/customfeeds.list; for f in passwall_luci passwall_packages passwall2; do U=\"$B/$f/packages.adb\"; grep -qF \"$U\" /etc/apk/repositories.d/customfeeds.list || echo \"$U\" >> /etc/apk/repositories.d/customfeeds.list; done; apk update && apk add --allow-untrusted luci-app-passwall2 luci-i18n-passwall2-zh-cn"
     },
     {
+      "name": "luci-app-nikki",
+      "desc": "Nikki 代理客户端(mihomo 内核,官方 apk feed 直装,依赖自动解析)",
+      "category": "网络",
+      "type": "external",
+      "pkg": "nikki luci-app-nikki luci-i18n-nikki-zh-cn",
+      "url": "https://github.com/nikkinikki-org/OpenWrt-nikki",
+      "cmd": ". /etc/openwrt_release; case \"$DISTRIB_RELEASE\" in *25.12*) BR=openwrt-25.12;; SNAPSHOT) BR=SNAPSHOT;; *) echo \"不支持的版本 $DISTRIB_RELEASE\"; exit 1;; esac; wget -q -O /etc/apk/keys/nikki.pem https://nikkinikki.pages.dev/public-key.pem || { echo \"密钥下载失败\"; exit 1; }; touch /etc/apk/repositories.d/customfeeds.list; sed -i '/nikki/d' /etc/apk/repositories.d/customfeeds.list; echo \"https://nikkinikki.pages.dev/$BR/$DISTRIB_ARCH/nikki/packages.adb\" >> /etc/apk/repositories.d/customfeeds.list; apk update && apk add --allow-untrusted nikki luci-app-nikki luci-i18n-nikki-zh-cn"
+    },
+    {
+      "name": "luci-app-mosdns",
+      "desc": "MosDNS 插件式 DNS 转发器(v5 官方预编译包,按架构自动匹配)",
+      "category": "网络",
+      "type": "external",
+      "pkg": "mosdns luci-app-mosdns luci-i18n-mosdns-zh-cn geo2txt v2ray-geoip v2ray-geosite",
+      "url": "https://github.com/sbwml/luci-app-mosdns/releases",
+      "cmd": "mkdir -p /tmp/mosdns && cd /tmp/mosdns && . /etc/openwrt_release; wget -q -O mosdns.tar.gz 'https://github.com/sbwml/luci-app-mosdns/releases/download/v5.3.4-r14/'\"$DISTRIB_ARCH\"'-openwrt-25.12.tar.gz' && tar xzf mosdns.tar.gz && apk add --allow-untrusted packages_ci/*.apk; s=$?; cd /; rm -rf /tmp/mosdns; exit $s"
+    },
+    {
+      "name": "luci-app-lucky",
+      "desc": "Lucky 网络工具集(DDNS/反代/端口转发,含 LuCI 界面与中文翻译)",
+      "category": "网络",
+      "type": "external",
+      "pkg": "lucky luci-app-lucky luci-i18n-lucky-zh-cn",
+      "url": "https://github.com/sirpdboy/luci-app-lucky/releases",
+      "cmd": "mkdir -p /tmp/lucky && cd /tmp/lucky && . /etc/openwrt_release; wget -q -O lucky.tar.gz 'https://github.com/sirpdboy/luci-app-lucky/releases/download/v2.27.2/SNAPSHOT-'\"$DISTRIB_ARCH\"'.tar.gz' && tar xzf lucky.tar.gz && apk add --allow-untrusted packages_ci/*.apk; s=$?; cd /; rm -rf /tmp/lucky; exit $s"
+    },
+    {
       "name": "luci-app-smartdns",
       "desc": "SmartDNS 智能分流 DNS(核心按路由器架构自动匹配,含中文界面)",
       "category": "网络",
