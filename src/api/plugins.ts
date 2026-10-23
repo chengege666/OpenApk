@@ -129,8 +129,8 @@ export function buildUninstallCommand(p: PluginItem): string {
   return `apk del ${pkgs}; ${clean}; echo UNINSTALL_DONE`
 }
 
-/** 架构兼容过滤 */
+/** 架构兼容过滤(支持结尾 * 前缀匹配,如 aarch64*) */
 export function isArchCompatible(p: PluginItem, arch: string): boolean {
   if (!p.arch || p.arch.length === 0 || !arch) return true
-  return p.arch.includes(arch)
+  return p.arch.some((a) => (a.endsWith('*') ? arch.startsWith(a.slice(0, -1)) : a === arch))
 }
