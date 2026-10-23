@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "updated": "2026-10-22",
+  "updated": "2026-10-23",
   "plugins": [
     {
       "name": "luci-i18n-base-zh-cn",
@@ -71,6 +71,15 @@
       "pkg": "nikki luci-app-nikki luci-i18n-nikki-zh-cn",
       "url": "https://github.com/nikkinikki-org/OpenWrt-nikki",
       "cmd": ". /etc/openwrt_release; case \"$DISTRIB_RELEASE\" in *25.12*) BR=openwrt-25.12;; SNAPSHOT) BR=SNAPSHOT;; *) echo \"不支持的版本 $DISTRIB_RELEASE\"; exit 1;; esac; wget -q -O /etc/apk/keys/nikki.pem https://nikkinikki.pages.dev/public-key.pem || { echo \"密钥下载失败\"; exit 1; }; touch /etc/apk/repositories.d/customfeeds.list; sed -i '/nikki/d' /etc/apk/repositories.d/customfeeds.list; echo \"https://nikkinikki.pages.dev/$BR/$DISTRIB_ARCH/nikki/packages.adb\" >> /etc/apk/repositories.d/customfeeds.list; apk update && apk add --allow-untrusted nikki luci-app-nikki luci-i18n-nikki-zh-cn"
+    },
+    {
+      "name": "luci-app-homeproxy",
+      "desc": "HomeProxy 代理客户端(sing-box 内核,ImmortalWrt 官方源直装,依赖自动解析)",
+      "category": "网络",
+      "type": "external",
+      "pkg": "luci-app-homeproxy luci-i18n-homeproxy-zh-cn sing-box",
+      "url": "https://github.com/immortalwrt/homeproxy",
+      "cmd": ". /etc/openwrt_release; apk update || echo \"[WARN] 官方源更新失败,继续\"; apk add kmod-nft-tproxy ucode-mod-digest firewall4 || { echo \"ERROR: 官方依赖安装失败\"; exit 1; }; touch /etc/apk/repositories.d/customfeeds.list; sed -i '/immortalwrt/d' /etc/apk/repositories.d/customfeeds.list; for f in luci packages; do echo \"https://downloads.immortalwrt.org/snapshots/packages/$DISTRIB_ARCH/$f/packages.adb\" >> /etc/apk/repositories.d/customfeeds.list; done; apk update || echo \"[WARN] ImmortalWrt 源更新失败,继续\"; apk add --allow-untrusted sing-box luci-app-homeproxy || { sed -i '/immortalwrt/d' /etc/apk/repositories.d/customfeeds.list; echo \"ERROR: HomeProxy 安装失败\"; exit 1; }; apk add --allow-untrusted luci-i18n-homeproxy-zh-cn || echo \"[WARN] 中文语言包暂缺,界面显示英文\"; sed -i '/immortalwrt/d' /etc/apk/repositories.d/customfeeds.list; luci-reload 2>/dev/null; echo \"==> HomeProxy 安装完成,LuCI 已重载\""
     },
     {
       "name": "luci-app-mosdns",
