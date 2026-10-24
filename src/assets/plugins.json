@@ -73,6 +73,15 @@
       "cmd": ". /etc/openwrt_release; case \"$DISTRIB_RELEASE\" in *25.12*) BR=openwrt-25.12;; SNAPSHOT) BR=SNAPSHOT;; *) echo \"不支持的版本 $DISTRIB_RELEASE\"; exit 1;; esac; wget -q -O /etc/apk/keys/nikki.pem https://nikkinikki.pages.dev/public-key.pem || { echo \"密钥下载失败\"; exit 1; }; touch /etc/apk/repositories.d/customfeeds.list; sed -i '/nikki/d' /etc/apk/repositories.d/customfeeds.list; echo \"https://nikkinikki.pages.dev/$BR/$DISTRIB_ARCH/nikki/packages.adb\" >> /etc/apk/repositories.d/customfeeds.list; apk update && apk add --allow-untrusted nikki luci-app-nikki luci-i18n-nikki-zh-cn"
     },
     {
+      "name": "luci-app-momo",
+      "desc": "Momo 代理客户端(sing-box 内核,官方 apk feed 直装,依赖自动解析)",
+      "category": "网络",
+      "type": "external",
+      "pkg": "momo luci-app-momo luci-i18n-momo-zh-cn",
+      "url": "https://github.com/nikkinikki-org/OpenWrt-momo",
+      "cmd": ". /etc/openwrt_release; case \"$DISTRIB_RELEASE\" in *24.10*) BR=openwrt-24.10;; *25.12*) BR=openwrt-25.12;; SNAPSHOT) BR=SNAPSHOT;; *) echo \"不支持的版本 $DISTRIB_RELEASE\"; exit 1;; esac; wget -q -O /etc/apk/keys/momo.pem https://momomomo.pages.dev/public-key.pem || { echo \"密钥下载失败\"; exit 1; }; touch /etc/apk/repositories.d/customfeeds.list; sed -i '/momo/d' /etc/apk/repositories.d/customfeeds.list; echo \"https://momomomo.pages.dev/$BR/$DISTRIB_ARCH/momo/packages.adb\" >> /etc/apk/repositories.d/customfeeds.list; apk update && apk add --allow-untrusted momo luci-app-momo luci-i18n-momo-zh-cn"
+    },
+    {
       "name": "luci-app-homeproxy",
       "desc": "HomeProxy 代理客户端(sing-box 内核,ImmortalWrt 官方源直装,依赖自动解析)",
       "category": "网络",
